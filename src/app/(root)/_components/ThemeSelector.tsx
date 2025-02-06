@@ -82,7 +82,8 @@ function ThemeSelector() {
                                 animate={{ opacity: 1 }}
                                 transition={{ delay: index * 0.1 }}
                                 className={` relative group w-full flex items-center gap-3 px-3 py-2.5 hover:bg-[#262637] transition-all duration-200 ${theme === t.id ? "bg-blue-500/10 text-blue-400" : "text-gray-300"} `}
-                                onClick={() => setTheme(t.id)}>
+                                onClick={() => setTheme(t.id)}>  {/* if you want to close the theme dropdown as well when theme is  selected do this {setThene(t.id), setIsOpen(false)} */}
+
                                 {/* bg gradient */}
                                 <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-purple-500/5  opacity-0 group-hover:opacity-100 transition-opacity" />
 

@@ -29,6 +29,7 @@ function LanguageSelector({ hasAccess }: { hasAccess: boolean }) {
     const handleLanguageSelect = (langId: string) => {
         if (!hasAccess && language !== "javascript") return;
         setLanguage(langId);
+        setIsOpen(false);
     }
 
     if (!mounted) return null;
@@ -80,7 +81,7 @@ function LanguageSelector({ hasAccess }: { hasAccess: boolean }) {
                                         key={lang.id}
                                         initial={{ opacity: 0 }}
                                         animate={{ opacity: 1 }}
-                                        transition={{ delay: index * 0.1, duration: 0.2 }}
+                                        transition={{ delay: index * 0.1 }}
                                         className="relative group px-2"
                                     >
                                         <button className={`relative w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200
