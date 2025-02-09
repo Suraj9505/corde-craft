@@ -1,7 +1,5 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { q } from "framer-motion/m";
-
 
 export const createSnippet = mutation({
     args: {
@@ -23,16 +21,21 @@ export const createSnippet = mutation({
 
         const snippetId = await ctx.db.insert("snippets", {
             userId: identity.subject,
-            ...args,
             userName: user.name,
-        })
-    }
+            title: args.title,
+            language: args.language,
+            code: args.code,
+        });
 
-})
-
+        return snippetId;
+    },
+});
 
 export const deleteSnippet = mutation({
-    args: { snippetId: v.id("snippets") },
+    args: {
+        snippetId: v.id("snippets"),
+    },
+
     handler: async (ctx, args) => {
         const identity = await ctx.auth.getUserIdentity();
         if (!identity) throw new Error("Not authenticated");
@@ -41,7 +44,7 @@ export const deleteSnippet = mutation({
         if (!snippet) throw new Error("Snippet not found");
 
         if (snippet.userId !== identity.subject) {
-            throw new Error("Not authorised to delete this snippet");
+            throw new Error("Not authorized to delete this snippet");
         }
 
         const comments = await ctx.db
@@ -65,8 +68,8 @@ export const deleteSnippet = mutation({
         }
 
         await ctx.db.delete(args.snippetId);
-    }
-})
+    },
+});
 
 export const starSnippet = mutation({
     args: {
@@ -79,20 +82,22 @@ export const starSnippet = mutation({
         const existing = await ctx.db
             .query("stars")
             .withIndex("by_user_id_and_snippet_id")
-            .filter((q) => q.eq(q.field("userId"), identity.subject) && q.eq(q.field("snippetId"), args.snippetId))
+            .filter(
+                (q) =>
+                    q.eq(q.field("userId"), identity.subject) && q.eq(q.field("snippetId"), args.snippetId)
+            )
             .first();
 
         if (existing) {
             await ctx.db.delete(existing._id);
-        }
-        else {
+        } else {
             await ctx.db.insert("stars", {
                 userId: identity.subject,
-                snippetId: args.snippetId
-            })
+                snippetId: args.snippetId,
+            });
         }
-    }
-})
+    },
+});
 
 export const addComment = mutation({
     args: {
@@ -111,53 +116,52 @@ export const addComment = mutation({
 
         if (!user) throw new Error("User not found");
 
-        return await ctx.db.insert("snippetComments", { ...args, userId: identity.subject, userName: user.name });
-    }
-})
-
-export const deleteCommet = mutation({
-    args: {
-        commentId: v.id("snippetComments"),
+        return await ctx.db.insert("snippetComments", {
+            snippetId: args.snippetId,
+            userId: identity.subject,
+            userName: user.name,
+            content: args.content,
+        });
     },
+});
+
+export const deleteComment = mutation({
+    args: { commentId: v.id("snippetComments") },
     handler: async (ctx, args) => {
         const identity = await ctx.auth.getUserIdentity();
-        if (!identity) throw new Error("Not Authenticated");
+        if (!identity) throw new Error("Not authenticated");
 
         const comment = await ctx.db.get(args.commentId);
         if (!comment) throw new Error("Comment not found");
 
+        // Check if the user is the comment author
         if (comment.userId !== identity.subject) {
             throw new Error("Not authorized to delete this comment");
         }
 
         await ctx.db.delete(args.commentId);
-    }
-})
+    },
+});
 
 export const getSnippets = query({
     handler: async (ctx) => {
         const snippets = await ctx.db.query("snippets").order("desc").collect();
         return snippets;
-    }
-})
+    },
+});
 
 export const getSnippetById = query({
-    args: {
-        snippetId: v.id("snippets")
-    },
+    args: { snippetId: v.id("snippets") },
     handler: async (ctx, args) => {
         const snippet = await ctx.db.get(args.snippetId);
         if (!snippet) throw new Error("Snippet not found");
 
         return snippet;
-    }
-})
-
+    },
+});
 
 export const getComments = query({
-    args: {
-        snippetId: v.id("snippets")
-    },
+    args: { snippetId: v.id("snippets") },
     handler: async (ctx, args) => {
         const comments = await ctx.db
             .query("snippetComments")
@@ -167,33 +171,32 @@ export const getComments = query({
             .collect();
 
         return comments;
-    }
-})
+    },
+});
 
 export const isSnippetStarred = query({
     args: {
-        snippetId: v.id("snippets")
+        snippetId: v.id("snippets"),
     },
     handler: async (ctx, args) => {
         const identity = await ctx.auth.getUserIdentity();
-
         if (!identity) return false;
 
         const star = await ctx.db
             .query("stars")
             .withIndex("by_user_id_and_snippet_id")
-            .filter((q) => q.eq(q.field("userId"), identity.subject) && q.eq(q.field("snippetId"), args.snippetId))
+            .filter(
+                (q) =>
+                    q.eq(q.field("userId"), identity.subject) && q.eq(q.field("snippetId"), args.snippetId)
+            )
             .first();
 
         return !!star;
-    }
-})
-
+    },
+});
 
 export const getSnippetStarCount = query({
-    args: {
-        snippetId: v.id("snippets")
-    },
+    args: { snippetId: v.id("snippets") },
     handler: async (ctx, args) => {
         const stars = await ctx.db
             .query("stars")
@@ -202,6 +205,22 @@ export const getSnippetStarCount = query({
             .collect();
 
         return stars.length;
-    }
+    },
+});
 
-})
+export const getStarredSnippets = query({
+    handler: async (ctx) => {
+        const identity = await ctx.auth.getUserIdentity();
+        if (!identity) return [];
+
+        const stars = await ctx.db
+            .query("stars")
+            .withIndex("by_user_id")
+            .filter((q) => q.eq(q.field("userId"), identity.subject))
+            .collect();
+
+        const snippets = await Promise.all(stars.map((star) => ctx.db.get(star.snippetId)));
+
+        return snippets.filter((snippet) => snippet !== null);
+    },
+});
