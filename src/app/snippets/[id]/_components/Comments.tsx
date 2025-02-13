@@ -15,7 +15,7 @@ function Comments({ snippetId }: { snippetId: Id<"snippets"> }) {
 
     const comments = useQuery(api.snippets.getComments, { snippetId }) || [];
     const addComment = useMutation(api.snippets.addComment);
-    const deleteComment = useMutation(api.snippets.deleteCommet);
+    const deleteComment = useMutation(api.snippets.deleteComment);
 
     const handleAddComment = async (content: string) => {
         setIsCommenting(true);
