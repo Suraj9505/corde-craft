@@ -79,8 +79,6 @@ export const starSnippet = mutation({
         const identity = await ctx.auth.getUserIdentity();
         if (!identity) throw new Error("Not authenticated");
 
-        console.log(identity.subject)
-
         const existing = await ctx.db
             .query("stars")
             .withIndex("by_user_id_and_snippet_id")
