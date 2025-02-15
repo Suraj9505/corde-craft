@@ -8,7 +8,6 @@ function StarButton({ snippetId }: { snippetId: Id<"snippets"> }) {
     const { isSignedIn } = useAuth();
 
     const isStarred = useQuery(api.snippets.isSnippetStarred, { snippetId });
-    console.log(isStarred)
     const starCount = useQuery(api.snippets.getSnippetStarCount, { snippetId });
     const star = useMutation(api.snippets.starSnippet);
 

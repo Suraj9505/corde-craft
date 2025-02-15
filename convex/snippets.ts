@@ -79,12 +79,16 @@ export const starSnippet = mutation({
         const identity = await ctx.auth.getUserIdentity();
         if (!identity) throw new Error("Not authenticated");
 
+        console.log(identity.subject)
+
         const existing = await ctx.db
             .query("stars")
             .withIndex("by_user_id_and_snippet_id")
-            .filter(
-                (q) =>
-                    q.eq(q.field("userId"), identity.subject) && q.eq(q.field("snippetId"), args.snippetId)
+            .filter((q) =>
+                q.and(
+                    q.eq(q.field("userId"), identity.subject), // Match only the logged-in user's star
+                    q.eq(q.field("snippetId"), args.snippetId)
+                )
             )
             .first();
 
@@ -187,7 +191,10 @@ export const isSnippetStarred = query({
             .withIndex("by_user_id_and_snippet_id")
             .filter(
                 (q) =>
-                    q.eq(q.field("userId"), identity.subject) && q.eq(q.field("snippetId"), args.snippetId)
+                    q.and(
+                        q.eq(q.field("userId"), identity.subject),
+                        q.eq(q.field("snippetId"), args.snippetId)
+                    )
             )
             .first();
 
